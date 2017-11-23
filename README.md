@@ -1,5 +1,15 @@
 A tool to manage GitHub repo collaborators with files
 
+* [The problem to solve](#the-problem-to-solve)
+* [How GitHub Collaborator Manager solves this](#how-github-collaborator-manager-solves-this)
+* [Security implications](#security-implications)
+* [Prerequisites](#prerequisites)
+* [One time setup](#one-time-setup)
+* [Enabling collaborator manager on a repo](#enabling-collaborator-manager-on-a-repo)
+* [`collaborators.yaml` format](#collaboratorsyaml-format)
+  * [Inherited collaborators](#inherited-collaborators)
+* [Why don't we have to configure which GitHub webhooks to trigger on?](#why-dont-we-have-to-configure-which-github-webhooks-to-trigger-on)
+
 # The problem to solve
 
 You've got a group of people who you want to collaborate with in multiple
@@ -77,6 +87,10 @@ can already push code to that repo the ability to add and remove collaborators.
 
       aws lambda add-permission --function-name github-collaborator-manager --statement-id GiveSNSPermissionToInvokeFunction --action lambda:InvokeFunction --principal sns.amazonaws.com --source-arn $topic_arn
 
+* Subscribe the Lambda function to the SNS topic
+
+      aws sns subscribe --topic-arn $topic_arn --protocol lambda --notification-endpoint $lambda_arn
+
 * Create IAM User to be used by GitHub
 
       aws iam create-user --user-name github-sns-publisher
@@ -91,11 +105,8 @@ can already push code to that repo the ability to add and remove collaborators.
    button, typing "SNS" in the filter field to search for "Amazon SNS"
     * Enter the `Aws key`, `Sns topic`, `Sns region` and `Aws secret` created above
       in each repo you want managed
-2. Subscribe the Lambda function to the SNS topic
 
-       aws sns subscribe --topic-arn $topic_arn --protocol lambda --notification-endpoint $lambda_arn
-
-3. Create a `.well-known/collaborators.yaml` file in the repo and the collaborator
+2. Create a `.well-known/collaborators.yaml` file in the repo and the collaborator
    manager will process the file when it's created (or updated)
 
 # `collaborators.yaml` format
@@ -104,31 +115,64 @@ can already push code to that repo the ability to add and remove collaborators.
 collaborators:
 - octocat
 - mojombo
-- octocat/Spoon-Knife
 ```
 
 The `collaborators.yaml` file which is located in any repo at `.well-known/collaborators.yaml`
-contains a map with a single key, `collaborators`. The value for that key is a 
-list of GitHub usernames that you want to be the collaborators on the repo as
-well as references to other GitHub repos that you would like to inherit a
-collaborators list from.
+contains a map with at least one key, `collaborators`. The value for that key is a 
+list of GitHub usernames that you want to be the collaborators on the repo.
 
 ## Inherited collaborators
 
-If you add a reference to another GitHub repo to the list the collaborator
-manager will inherit the collabortors from that repo.
+In addtion to GitHub usernames in the `collaborators` list, you can add
+references to other GitHub repos that you would like to inherit a collaborators
+list from.
 
 For example if you created a collaborators file in your repo and added a line
-like `- octocat/Spoon-Knife`, the collaborator manager would fetch the
-collaborator file https://github.com/octocat/Spook-Knife/blob/master/.well-known/collaborators.yaml
+like 
+
+```yaml
+collaborators:
+- octocat
+- mojombo
+- octocat/Spoon-Knife
+```
+    
+the collaborator manager would not only add `octocat` and `mojobo` as
+collaborators it would also fetch the collaborator file
+https://github.com/octocat/Spook-Knife/blob/master/.well-known/collaborators.yaml
 and add all of the collaborates in that file as collaborators on your repo.
 
 It would also traverse any other repos referenced in the `octocat/Spoon-Knife`
 collaborator file.
 
-Additionally if later, the `octocat/Spoon-Knife` collaborator file was updated
+Additionally, if later, the `octocat/Spoon-Knife` collaborator file was updated
 those added or removed users would also be added or removed from your repo that
 references that collaborator file.
+
+If you reference a collaborator file, make sure to also update the *referenced*
+repository to link back using a `child_repos` key.
+
+<table>
+<tr><th><code>octocat/Fork-Chopstick</code></th><th><code>octocat/Spoon-Knife</code></th></tr>
+<tr><td>
+   <pre lang="yaml">
+collaborators:
+- octocat
+- mojombo
+- octocat/Spoon-Knife
+   </pre>
+</td>
+<td>
+  <pre lang="yaml">
+collaborators:
+- defunkt
+- pjhyett
+child_repos:
+- octocat/Fork-Chopstick
+  </pre>
+</td>
+</tr>
+</table>
 
 # Why don't we have to configure which GitHub webhooks to trigger on?
 

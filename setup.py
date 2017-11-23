@@ -11,7 +11,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='githug_collaborator_manager',
-    version='0.9',
+    version='0.9.1',
     description='A tool to manage GitHub repo collaborators with files',
     long_description=long_description,
     url='https://github.com/gene1wood/github-collaborator-manager',

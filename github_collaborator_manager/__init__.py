@@ -99,6 +99,7 @@ def get_collaborator_file(ag, owner, repo_name):
             repo, COLLABORATOR_FILENAME))
     return result
 
+
 def fetch_collaborators(ag, owner, repo_name,
                         repo_collaborator_map=(None, None)):
     """Recursively fetch collaborators from COLLABORATOR_FILENAME and along the
