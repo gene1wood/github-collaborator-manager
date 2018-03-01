@@ -139,7 +139,7 @@ collaborators:
     
 the collaborator manager would not only add `octocat` and `mojobo` as
 collaborators it would also fetch the collaborator file
-https://github.com/octocat/Spook-Knife/blob/master/.well-known/collaborators.yaml
+https://github.com/octocat/Spoon-Knife/blob/master/.well-known/collaborators.yaml
 and add all of the collaborates in that file as collaborators on your repo.
 
 It would also traverse any other repos referenced in the `octocat/Spoon-Knife`
